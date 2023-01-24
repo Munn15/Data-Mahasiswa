@@ -1,0 +1,287 @@
+unit Unit1;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, StdCtrls, Grids, DBGrids, DB, ADODB, jpeg, ExtCtrls;
+
+type
+  Tfdata = class(TForm)
+    Image1: TImage;
+    Label1: TLabel;
+    Label2: TLabel;
+    Label3: TLabel;
+    Label4: TLabel;
+    Label5: TLabel;
+    enama: TEdit;
+    enim: TEdit;
+    ejurusan: TEdit;
+    efakultas: TEdit;
+    DBGrid1: TDBGrid;
+    GroupBox1: TGroupBox;
+    btambah: TButton;
+    bsimpan: TButton;
+    bedit: TButton;
+    bbatal: TButton;
+    bhapus: TButton;
+    bkeluar: TButton;
+    ADOConnection1: TADOConnection;
+    ADOQuery1: TADOQuery;
+    DataSource1: TDataSource;
+    procedure kosongkan; //tambahkan beberapa procedure berikut
+    procedure bacasaja;
+    procedure bacatulis;
+    procedure tampilkan;
+    procedure simpandata;
+    procedure editdata;
+    procedure FormCreate(Sender: TObject);
+    procedure FormActivate(Sender: TObject);
+    procedure btambahClick(Sender: TObject);
+    procedure bsimpanClick(Sender: TObject);
+    procedure beditClick(Sender: TObject);
+    procedure bbatalClick(Sender: TObject);
+    procedure bhapusClick(Sender: TObject);
+    procedure bkeluarClick(Sender: TObject);
+    procedure DBGrid1CellClick(Column: TColumn);
+    procedure DBGrid1KeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
+    procedure DBGrid1KeyUp(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
+    procedure enimKeyPress(Sender: TObject; var Key: Char);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  fdata: Tfdata;
+
+implementation
+
+{$R *.dfm}
+
+procedure Tfdata.kosongkan; //berfungsi untuk mengosongkan form agar siap diisi data
+begin
+enim.Text:='';
+enama.Text:='';
+ejurusan.Text:='';
+efakultas.Text:='';
+end;
+
+procedure Tfdata.bacasaja; //untuk membuat form tidak bisa diubah
+begin
+enim.ReadOnly:=true;
+enama.ReadOnly:=true;
+ejurusan.ReadOnly:=true;
+efakultas.ReadOnly:=true;
+end;
+
+procedure Tfdata.bacatulis; //form bisa diubah
+begin
+enim.ReadOnly:=false;
+enama.ReadOnly:=false;
+ejurusan.ReadOnly:=false;
+efakultas.ReadOnly:=false;
+end;
+
+procedure Tfdata.tampilkan; //berfungsi untuk menampilkan database pada form
+begin
+ADOQuery1.Open;
+enim.Text:=ADOQuery1['Nim'];
+enama.Text:=ADOQuery1['Nama'];
+ejurusan.Text:=ADOQuery1['Jurusan'];
+efakultas.Text:=ADOQuery1['Fakultas'];
+
+bacasaja; // memanggil / menjalankan procedure bacasaja
+bhapus.Enabled:=true;  // mengaktifkan / menonaktifkan tombol
+bkeluar.Enabled:=true;
+btambah.Enabled:=true;
+bsimpan.Enabled:=false;
+bbatal.Enabled:=true;
+bedit.Enabled:=true;
+end;
+
+procedure Tfdata.simpandata; //untuk menyimpan data ke database
+begin
+ADOQuery1.Append;
+ADOQuery1.FieldByName('Nim').Value:=enim.Text;
+ADOQuery1.FieldByName('Nama').Value:=enama.Text;
+ADOQuery1.FieldByName('Jurusan').Value:=ejurusan.Text;
+ADOQuery1.FieldByName('Fakultas').Value:=efakultas.Text;
+ADOQuery1.Post;
+end;
+
+procedure Tfdata.editdata; //untuk mengubah data pada database
+begin
+ADOQuery1.Edit;
+ADOQuery1.FieldByName('Nim').Value:=enim.Text;
+ADOQuery1.FieldByName('Nama').Value:=enama.Text;
+ADOQuery1.FieldByName('Jurusan').Value:=ejurusan.Text;
+ADOQuery1.FieldByName('Fakultas').Value:=efakultas.Text;
+ADOQuery1.Post;
+end;
+
+procedure Tfdata.FormCreate(Sender: TObject);
+begin
+bacasaja; // memanggil/menjalankan procedure bacasaja
+btambah.Enabled:=true;
+bsimpan.Enabled:=false;
+bhapus.Enabled:=false;
+bhapus.Enabled:=false;
+bedit.Enabled:=false;
+bbatal.Enabled:=false;
+bkeluar.Enabled:=true;
+end;
+
+procedure Tfdata.FormActivate(Sender: TObject); //procedure ini akan dijalankan saat form aktif
+begin
+ADOQuery1.Active:=True; //berfungsi agar adoquery1 dalam keadaan aktif / terhubung dengan adoconnection
+end;
+
+procedure Tfdata.btambahClick(Sender: TObject);
+begin
+kosongkan; //memanggil procedur kosongkan
+bacatulis;  //memanggil procedur bacatulis
+enim.Enabled:=True;
+enim.SetFocus; // meletakan cursor pada Nim
+bhapus.Enabled:=false;
+bkeluar.Enabled:=false;
+btambah.Enabled:=false;
+bsimpan.Enabled:=True;
+bbatal.Enabled:=true;
+bedit.Enabled:=False;
+DBGrid1.Enabled:=True;
+end;
+
+procedure Tfdata.bsimpanClick(Sender: TObject);
+begin
+if (enim.Text='') or (enama.Text='') then //memeriksa apakah 2 field ini kosong atau tidak
+begin
+MessageDlg('Maaf, data tidak boleh ada yang kosong',mtError,[mbOK],0); //memunculkan pesan kesalahan
+enim.SetFocus;
+end
+else
+begin
+if ADOQuery1.Locate('Nim',enim.Text,[]) then //memeriksa apakah Nim ada yang sama
+begin
+editdata;
+MessageDlg('Data berhasil diubah',mtInformation,[mbOK],0);
+DBGrid1.Enabled:=True;
+btambah.Enabled:=True;
+bsimpan.Enabled:=False;
+bhapus.Enabled:=False;
+bedit.Enabled:=False;
+bbatal.Enabled:=True;
+bkeluar.Enabled:=True;
+bacasaja;
+end
+else
+begin
+simpandata;
+MessageDlg('Data Berhasil Disimpan',mtInformation,[mbOK],0);
+DBGrid1.Enabled:=True;
+btambah.Enabled:=True;
+bsimpan.Enabled:=False;
+bhapus.Enabled:=False;
+bedit.Enabled:=False;
+bbatal.Enabled:=True;
+bkeluar.Enabled:=True;
+bacasaja;
+end;
+end;
+end;
+
+procedure Tfdata.beditClick(Sender: TObject);
+begin
+bacatulis;
+enim.Enabled:=True;
+enim.SetFocus;
+DBGrid1.Enabled:=False;
+btambah.Enabled:=False;
+bsimpan.Enabled:=True;
+bhapus.Enabled:=False;
+bedit.Enabled:=False;
+bbatal.Enabled:=True;
+bkeluar.Enabled:=False;
+end;
+
+procedure Tfdata.bbatalClick(Sender: TObject);
+begin
+bacasaja;
+kosongkan;
+bhapus.Enabled:=False;
+bkeluar.Enabled:=True;
+btambah.Enabled:=True;
+bsimpan.Enabled:=False;
+bbatal.Enabled:=True;
+bedit.Enabled:=False;
+DBGrid1.Enabled:=True;
+end;
+
+procedure Tfdata.bhapusClick(Sender: TObject);
+begin
+DBGrid1.DataSource.DataSet.Delete;
+DBGrid1.Enabled:=True;
+btambah.Enabled:=True;
+bsimpan.Enabled:=False;
+bhapus.Enabled:=False;
+bedit.Enabled:=False;
+bbatal.Enabled:=False;
+bkeluar.Enabled:=True;
+kosongkan;
+MessageDlg('Data Berhasil Dihapus',mtInformation,[mbOK],0);
+bacasaja;
+end;
+
+procedure Tfdata.bkeluarClick(Sender: TObject);
+begin
+Close;
+end;
+
+procedure Tfdata.DBGrid1CellClick(Column: TColumn);
+begin
+tampilkan; //memanggil procedure tampilkan
+bacasaja;
+btambah.Enabled:=True;
+bsimpan.Enabled:=False;
+bhapus.Enabled:=True;
+bedit.Enabled:=True;
+bbatal.Enabled:=True;
+bkeluar.Enabled:=True;
+end;
+
+procedure Tfdata.DBGrid1KeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+tampilkan;
+bacasaja;
+btambah.Enabled:=True;
+bsimpan.Enabled:=False;
+bhapus.Enabled:=True;
+bedit.Enabled:=True;
+bbatal.Enabled:=True;
+bkeluar.Enabled:=True;
+end;
+
+procedure Tfdata.DBGrid1KeyUp(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+tampilkan;
+bacasaja;
+btambah.Enabled:=True;
+bsimpan.Enabled:=False;
+bhapus.Enabled:=True;
+bedit.Enabled:=True;
+bbatal.Enabled:=True;
+bkeluar.Enabled:=True;
+end;
+
+procedure Tfdata.enimKeyPress(Sender: TObject; var Key: Char);
+begin
+if not (Key in['0'..'9',#8]) then //agar NIM hanya bisa diisi dengan angka
+Key:=#0;
+end;
+
+end.
